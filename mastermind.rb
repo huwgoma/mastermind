@@ -139,7 +139,7 @@ class UserCodeBreaker
   end
 
   def guess_valid?
-    @guess.length == 4 &&
+    @guess.length == 5 &&
       guess_array.all? { |number| Board::NUMBER_OPTIONS.include?(number) }
   end
 end
@@ -155,7 +155,8 @@ class CodeMaker
   attr_reader :computer_code, :user_code
 
   def create_computer_code
-    @computer_code = Array.new(4) { Board::NUMBER_OPTIONS.sample }
+    #@computer_code = Array.new(4) { Board::NUMBER_OPTIONS.sample }
+    @computer_code = [1, 3, 4, 1, 5]
   end
   
   def get_user_code
@@ -167,13 +168,33 @@ end
 
 
 module ClueLogic
+  attr_reader :common_numbers_count_hash
+
   def return_clues
+    common_numbers
+    common_numbers_count
     number_and_position?
+    binding.pry
   end
-# input guess, output feedback(clues)
+
+  def common_numbers
+    guess & code
+  end
+
+  def common_numbers_count
+    @common_numbers_count_hash = common_numbers.reduce(Hash.new(0)) do |hash, number|
+      
+      guess_occurrences = guess.filter { |guess_digit| guess_digit == number }.length
+      code_occurrences = code.filter { |code_digit| code_digit == number }.length
+      
+      hash[number] = [guess_occurrences, code_occurrences].min
+      hash
+    end
+  end
+
   def number_and_position?
     guess.each_with_index.reduce(Hash.new) do |hash, (number, index)|
-      binding.pry
+      
     end
   end
 end
