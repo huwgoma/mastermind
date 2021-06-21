@@ -78,7 +78,6 @@ module GameText
   end
 end
 
-
 class Board
   def initialize
     @turn_number = 0
@@ -97,13 +96,18 @@ class Board
     correct_number_wrong_location: "○"
   } 
   MAX_TURN_NUMBER = 12
-
 end
+
+
+
 
 # If the computer is the Code Breaker
 class ComputerCodeBreaker
   
 end
+
+
+
 
 # If the user is the Code Breaker
 class UserCodeBreaker
@@ -117,7 +121,7 @@ class UserCodeBreaker
       puts prompt_guess
       get_guess
     end
-    guess_array
+    return guess_array
   end
 
   private
@@ -138,15 +142,17 @@ class UserCodeBreaker
     @guess.length == 4 &&
       guess_array.all? { |number| Board::NUMBER_OPTIONS.include?(number) }
   end
-  
-  
-
 end
+
+
+
 
 class CodeMaker
   def initialize
     create_computer_code
   end
+
+  attr_reader :computer_code, :user_code
 
   def create_computer_code
     @computer_code = Array.new(4) { Board::NUMBER_OPTIONS.sample }
@@ -158,38 +164,65 @@ class CodeMaker
 end
 
 
+
+
 module ClueLogic
+  def return_clues
+    number_and_position?
+  end
 # input guess, output feedback(clues)
+  def number_and_position?
+    guess.each_with_index.reduce(Hash.new) do |hash, (number, index)|
+      binding.pry
+    end
+  end
 end
+
+
+
 
 class Game
   include Rules
   include GameText
+  include ClueLogic
+
+  attr_reader :code, :code_breaker, :guess
 
   def initialize
     board = Board.new
     instructions
-    play_game
-  end
+    choose_role
 
-  attr_reader :code, :code_breaker, :guess
-
-  def play_game
-    @code = CodeMaker.new 
-    @code_breaker = UserCodeBreaker.new
+    initialize_code
     puts computer_code_created
+    initialize_code_breaker
     puts prompt_guess
-    @guess = get_guess
-    binding.pry
+    game_loop
   end
 
   private
 
+  def choose_role
+
+  end
+
+  def initialize_code
+    @code = CodeMaker.new.computer_code
+  end
+
+  def initialize_code_breaker
+    @code_breaker = UserCodeBreaker.new
+  end
+  
   def get_guess
     code_breaker.get_guess
   end
 
+  def game_loop
+    @guess = get_guess  
+    return_clues 
+  end
+ 
 end
-
 
 Game.new
