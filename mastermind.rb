@@ -63,6 +63,22 @@ module Rules
   end
 end
 
+# Module for displaying game text
+module GameText
+  def computer_code_created
+    "The computer has chosen its 4-digit code."
+  end
+
+  def prompt_guess
+    "Please enter your guess:"
+  end
+
+  def invalid_guess_warning
+    "Your guess should be a 4-digit number (each digit should be between 1-6):".colorize(:red).bold
+  end
+end
+
+
 class Board
   def initialize
     @turn_number = 0
@@ -91,10 +107,38 @@ end
 
 # If the user is the Code Breaker
 class UserCodeBreaker
-  def initialize
-    
+  include GameText
+
+  def get_guess
+    get_guess_input
+    guess_to_int_array
+    until guess_valid?
+      puts invalid_guess_warning
+      puts prompt_guess
+      get_guess
+    end
+    guess_array
   end
 
+  private
+
+  def get_guess_input
+    @guess = gets.chomp
+  end
+
+  attr_reader :guess, :guess_array
+  
+  def guess_to_int_array
+    @guess_array = guess.split('').map do |number|
+      number.to_i
+    end
+  end
+
+  def guess_valid?
+    @guess.length == 4 &&
+      guess_array.all? { |number| Board::NUMBER_OPTIONS.include?(number) }
+  end
+  
   
 
 end
@@ -109,31 +153,41 @@ class CodeMaker
   end
   
   def get_user_code
-    user_code = gets.chomp
+    @user_code = gets.chomp
   end
 end
 
 
 module ClueLogic
-
+# input guess, output feedback(clues)
 end
 
 class Game
   include Rules
+  include GameText
 
   def initialize
     board = Board.new
     instructions
     play_game
   end
+
+  attr_reader :code, :code_breaker, :guess
+
   def play_game
-    @code_breaker = UserCodeBreaker.new
     @code = CodeMaker.new 
+    @code_breaker = UserCodeBreaker.new
+    puts computer_code_created
+    puts prompt_guess
+    @guess = get_guess
     binding.pry
   end
 
   private
 
+  def get_guess
+    code_breaker.get_guess
+  end
 
 end
 
