@@ -52,10 +52,10 @@ module Rules
 
   def display_clue_options
     puts "\n"
-    print Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_location] + "  "
-    puts "A #{'red dot'.colorize(:red)} indicates that your guess contains 1 correct number in the correct location."
-    print Board::CLUE_OPTIONS_DISPLAY[:correct_number_wrong_location] + "  "
-    puts 'An empty dot indicates that your guess contains 1 correct number, but in the wrong location.'
+    print Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position] + "  "
+    puts "A #{'red dot'.colorize(:red)} indicates that your guess contains 1 correct number in the correct position."
+    print Board::CLUE_OPTIONS_DISPLAY[:correct_number_wrong_position] + "  "
+    puts 'An empty dot indicates that your guess contains 1 correct number, but in the wrong position.'
     puts "\n"
   end
   def display_clue_example
@@ -92,8 +92,8 @@ class Board
     6 => "#{'  6  '.colorize(:light_white).on_magenta}"
   }
   CLUE_OPTIONS_DISPLAY = {
-    correct_number_correct_location: "#{'●'.colorize(:red)}",
-    correct_number_wrong_location: "○"
+    correct_number_correct_position: "#{'●'.colorize(:red)}",
+    correct_number_wrong_position: "○"
   } 
   MAX_TURN_NUMBER = 12
 end
@@ -165,47 +165,85 @@ class CodeMaker
 end
 
 
+#Class for clue instances and logic
+class Clue
+  attr_reader :guess, :code, :common_numbers_count, :matching_indexes, :true_true_indexes, :true_unknown_indexes
 
+  def initialize(guess, code)
+    @guess = guess
+    @code = code
+    @clues_hash = {}
+    return_clues
+  end
 
-module ClueLogic
-  attr_reader :common_numbers_count_hash
-
+  private
+  
   def return_clues
-    common_numbers
-    common_numbers_count
-    number_and_position?
-    binding.pry
+    process_input
+  end
+
+  def process_input
+    common_numbers_occurrences
+    indexes_number_true_position_true?
+    number_true_position_true
+    number_true_position_unknown
+
+
+    subtract_true_trues
   end
 
   def common_numbers
     guess & code
   end
 
-  def common_numbers_count
-    @common_numbers_count_hash = common_numbers.reduce(Hash.new(0)) do |hash, number|
-      
+  def common_numbers_occurrences
+    @common_numbers_count = common_numbers.reduce(Hash.new(0)) do |hash, number|
       guess_occurrences = guess.filter { |guess_digit| guess_digit == number }.length
       code_occurrences = code.filter { |code_digit| code_digit == number }.length
-      
       hash[number] = [guess_occurrences, code_occurrences].min
       hash
     end
   end
 
-  def number_and_position?
-    guess.each_with_index.reduce(Hash.new) do |hash, (number, index)|
+  def indexes_number_true_position_true?
+    # does each index in the guess match both number and position?
+    @matching_indexes = guess.each_with_index.reduce(Hash.new(0)) do |hash, (number, index)|
+      hash[index] = guess[index] == code[index]
+      hash
+    end
+  end
+
+  def number_true_position_true
+    @true_true_indexes = matching_indexes.select do |index_key, boolean_value|
+      boolean_value == true
+    end
+  end
+
+  def number_true_position_unknown
+    @true_unknown_indexes = matching_indexes.select do |index_key, boolean_value|
+      boolean_value == false
+    end
+  end
+  
+  def subtract_true_trues
+    true_true_indexes.each do |index_key, boolean_value|
+      subtract_from_common_count(guess[index_key])
+      
       
     end
   end
+
+  def subtract_from_common_count(guess_index)
+    common_numbers_count[guess_index] -= 1
+    binding.pry
+  end
+
 end
-
-
-
 
 class Game
   include Rules
   include GameText
-  include ClueLogic
+  
 
   attr_reader :code, :code_breaker, :guess
 
@@ -218,6 +256,7 @@ class Game
     puts computer_code_created
     initialize_code_breaker
     puts prompt_guess
+
     game_loop
   end
 
@@ -237,11 +276,12 @@ class Game
   
   def get_guess
     code_breaker.get_guess
+    
   end
 
   def game_loop
-    @guess = get_guess  
-    return_clues 
+    @guess = get_guess
+    @clues = Clue.new(guess, code)
   end
  
 end
