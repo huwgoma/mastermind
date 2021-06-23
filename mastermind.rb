@@ -178,18 +178,11 @@ class Clue
   end
 
   private
-  
-  def return_clues
-    process_input
-  end
 
-  def process_input
+  def return_clues
     count_common_numbers
     build_index_hash
-    # indexes_number_true_position_true?
-    # split_index_hash
-    
-    
+    assign_clue_visuals
     binding.pry
   end
 
@@ -202,7 +195,6 @@ class Clue
       guess_occurrences = guess.filter { |guess_digit| guess_digit == number }.length
       code_occurrences = code.filter { |code_digit| code_digit == number }.length
       hash[number] = [guess_occurrences, code_occurrences].min
-      
       hash
     end
   end
@@ -210,13 +202,12 @@ class Clue
   def build_index_hash
     @index_hash = guess.each_with_index.reduce(Hash.new) do |hash, (number, index)|
       hash[index] = Hash.new
-      
       hash[index][:guess_value] = guess[index]
       hash[index][:code_value] = code[index]
       hash[index][:number_and_position_correct?] = number_and_position_true?(index)
       subtract_true_true_value(hash, index)
       hash[index][:number_correct?] = hash[index][:number_and_position_correct?] ? true : unknown_number_true?(index)
-      binding.pry
+
       hash
     end
   end
@@ -226,7 +217,7 @@ class Clue
   end
   
   def subtract_true_true_value(hash, index)
-    subtract_from_common_count(guess[index]) if hash[index][:number_and_position_correct?] == true
+    subtract_from_common_count(guess[index]) if hash[index][:number_and_position_correct?] 
   end
 
   def unknown_number_true?(index)
@@ -238,18 +229,20 @@ class Clue
     end
   end
 
-  
-    
-    # index_hash.each do |index_key, hash|
-    #   subtract_from_common_count(guess[index_key]) if hash[:number_and_position_correct?] == true
-    # end
-
   def subtract_from_common_count(guess_index)
     common_numbers_count[guess_index] -= 1
   end
 
-  
-
+  def assign_clue_visuals
+    index_hash.each do |index_key, hash|
+      #binding.pry
+      if hash[:number_and_position_correct?]
+        hash[:clue_display] = Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position]
+      elsif !hash[:number_and_position_correct?] && hash[:number_correct?]
+        hash[:clue_display] = Board::CLUE_OPTIONS_DISPLAY[:correct_number_wrong_position]
+      end
+    end
+  end
 end
 
 class Game
