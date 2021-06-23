@@ -167,12 +167,13 @@ end
 
 #Class for clue instances and logic
 class Clue
-  attr_reader :guess, :code, :common_numbers_count, :matching_indexes, :true_true_indexes, :true_unknown_indexes
+  attr_reader :guess, :code, :common_numbers_count
+  attr_accessor :index_hash
 
   def initialize(guess, code)
     @guess = guess
     @code = code
-    @clues_hash = {}
+    
     return_clues
   end
 
@@ -183,60 +184,76 @@ class Clue
   end
 
   def process_input
-    common_numbers_occurrences
-    indexes_number_true_position_true?
-    number_true_position_true
-    number_true_position_unknown
-
-
-    subtract_true_trues
+    count_common_numbers
+    build_index_hash
+    # indexes_number_true_position_true?
+    # split_index_hash
+    
+    
+    binding.pry
   end
 
   def common_numbers
     guess & code
   end
 
-  def common_numbers_occurrences
+  def count_common_numbers
     @common_numbers_count = common_numbers.reduce(Hash.new(0)) do |hash, number|
       guess_occurrences = guess.filter { |guess_digit| guess_digit == number }.length
       code_occurrences = code.filter { |code_digit| code_digit == number }.length
       hash[number] = [guess_occurrences, code_occurrences].min
+      
       hash
     end
   end
 
-  def indexes_number_true_position_true?
-    # does each index in the guess match both number and position?
-    @matching_indexes = guess.each_with_index.reduce(Hash.new(0)) do |hash, (number, index)|
-      hash[index] = guess[index] == code[index]
+  def build_index_hash
+    @index_hash = guess.each_with_index.reduce(Hash.new) do |hash, (number, index)|
+      hash[index] = Hash.new
+      
+      hash[index][:guess_value] = guess[index]
+      hash[index][:code_value] = code[index]
+      hash[index][:number_and_position_correct?] = number_and_position_true?(index)
+      subtract_true_true_value(hash, index)
+      hash[index][:number_correct?] = hash[index][:number_and_position_correct?] ? true : unknown_number_true?(index)
+      binding.pry
       hash
-    end
-  end
-
-  def number_true_position_true
-    @true_true_indexes = matching_indexes.select do |index_key, boolean_value|
-      boolean_value == true
-    end
-  end
-
-  def number_true_position_unknown
-    @true_unknown_indexes = matching_indexes.select do |index_key, boolean_value|
-      boolean_value == false
     end
   end
   
-  def subtract_true_trues
-    true_true_indexes.each do |index_key, boolean_value|
-      subtract_from_common_count(guess[index_key])
-      
-      
+  def number_and_position_true?(index)
+    guess[index] == code[index] 
+  end
+  
+  def unknown_number_true?(index)
+    if common_numbers_count[guess[index]] > 0
+      subtract_from_common_count(index)
+      true
+    else
+      false
     end
   end
 
+  
+  
+
+
+
+
+
+  def subtract_true_true_value(hash, index)
+    subtract_from_common_count(guess[index]) if hash[index][:number_and_position_correct?] == true
+  end
+    
+    # index_hash.each do |index_key, hash|
+    #   subtract_from_common_count(guess[index_key]) if hash[:number_and_position_correct?] == true
+    # end
+
   def subtract_from_common_count(guess_index)
     common_numbers_count[guess_index] -= 1
-    binding.pry
   end
+
+  
 
 end
 
