@@ -225,9 +225,13 @@ class Clue
     guess[index] == code[index] 
   end
   
+  def subtract_true_true_value(hash, index)
+    subtract_from_common_count(guess[index]) if hash[index][:number_and_position_correct?] == true
+  end
+
   def unknown_number_true?(index)
     if common_numbers_count[guess[index]] > 0
-      subtract_from_common_count(index)
+      subtract_from_common_count(guess[index])
       true
     else
       false
@@ -235,15 +239,6 @@ class Clue
   end
 
   
-  
-
-
-
-
-
-  def subtract_true_true_value(hash, index)
-    subtract_from_common_count(guess[index]) if hash[index][:number_and_position_correct?] == true
-  end
     
     # index_hash.each do |index_key, hash|
     #   subtract_from_common_count(guess[index_key]) if hash[:number_and_position_correct?] == true
