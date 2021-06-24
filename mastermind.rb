@@ -76,12 +76,27 @@ module GameText
   def invalid_guess_warning
     "Your guess should be a 4-digit number (each digit should be between 1-6):".colorize(:red).bold
   end
+  
+  def clue_text
+    "Clues for this guess: "
+  end
+
+  def turn_number
+    "Turn: #{Board.turn_number}"
+  end
 end
 
 class Board
+  attr_accessor :turn_number
+
   def initialize
-    @turn_number = 0
+    @turn_number = 1
   end
+
+  def increment_turn
+    self.turn_number += 1
+  end
+
   NUMBER_OPTIONS = [1,2,3,4,5,6]
   NUMBER_OPTIONS_DISPLAY = {
     1 => "#{'  1  '.colorize(:light_white).on_red}",
@@ -139,13 +154,10 @@ class UserCodeBreaker
   end
 
   def guess_valid?
-    @guess.length == 5 &&
+    @guess.length == 4 &&
       guess_array.all? { |number| Board::NUMBER_OPTIONS.include?(number) }
   end
 end
-
-
-
 
 class CodeMaker
   def initialize
@@ -156,7 +168,7 @@ class CodeMaker
 
   def create_computer_code
     #@computer_code = Array.new(4) { Board::NUMBER_OPTIONS.sample }
-    @computer_code = [1, 3, 4, 1, 5]
+    @computer_code = [1, 3, 4, 1]
   end
   
   def get_user_code
@@ -168,22 +180,25 @@ end
 #Class for clue instances and logic
 class Clue
   attr_reader :guess, :code, :common_numbers_count
-  attr_accessor :index_hash
+  attr_accessor :index_hash, :index_clue
 
   def initialize(guess, code)
     @guess = guess
     @code = code
-    
-    return_clues
+    process_guess
+  end
+
+  def return_clues
+    return_clue_array
   end
 
   private
 
-  def return_clues
+  def process_guess
     count_common_numbers
     build_index_hash
-    assign_clue_visuals
-    binding.pry
+    add_clues
+    
   end
 
   def common_numbers
@@ -207,7 +222,6 @@ class Clue
       hash[index][:number_and_position_correct?] = number_and_position_true?(index)
       subtract_true_true_value(hash, index)
       hash[index][:number_correct?] = hash[index][:number_and_position_correct?] ? true : unknown_number_true?(index)
-
       hash
     end
   end
@@ -233,34 +247,41 @@ class Clue
     common_numbers_count[guess_index] -= 1
   end
 
-  def assign_clue_visuals
+  def add_clues
     index_hash.each do |index_key, hash|
-      #binding.pry
       if hash[:number_and_position_correct?]
+        hash[:clue] = 'correct number correct position'
         hash[:clue_display] = Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position]
-      elsif !hash[:number_and_position_correct?] && hash[:number_correct?]
+      elsif hash[:number_correct?]
+        hash[:clue] = 'correct number wrong position'
         hash[:clue_display] = Board::CLUE_OPTIONS_DISPLAY[:correct_number_wrong_position]
       end
     end
   end
+
+  def return_clue_array
+    index_hash.map do |index_key, hash_value|
+      hash_value[:clue_display]
+    end
+  end
+
 end
 
 class Game
   include Rules
   include GameText
-  
 
-  attr_reader :code, :code_breaker, :guess
+  attr_reader :board, :code, :code_breaker, :guess, :clues
 
   def initialize
-    board = Board.new
+    @board = Board.new
     instructions
     choose_role
 
     initialize_code
     puts computer_code_created
     initialize_code_breaker
-    puts prompt_guess
+    
 
     game_loop
   end
@@ -278,17 +299,46 @@ class Game
   def initialize_code_breaker
     @code_breaker = UserCodeBreaker.new
   end
-  
-  def get_guess
-    code_breaker.get_guess
-    
-  end
 
   def game_loop
-    @guess = get_guess
-    @clues = Clue.new(guess, code)
+    loop do
+      puts prompt_guess
+      @guess = code_breaker.get_guess
+      @clues = Clue.new(guess, code).return_clues
+      display_guess
+      print clue_text
+      display_clues
+      board.increment_turn
+      # puts GameText::turn_number
+      break if game_over?
+    end
   end
- 
+  
+  def display_guess
+    guess.each { |number| print Board::NUMBER_OPTIONS_DISPLAY[number] + ' ' }
+  end
+
+  def display_clues
+    clues.each do |clue| 
+      begin
+        print clue + ' ' 
+      rescue NoMethodError
+      end
+    end
+    puts "\n"
+  end
+
+  def game_over?
+    code_maker_wins? || code_breaker_wins?
+  end
+
+  def code_maker_wins?
+    board.turn_number>12
+  end
+
+  def code_breaker_wins?
+    clues.all? { |clue| clue == Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position] }
+  end
 end
 
 Game.new
