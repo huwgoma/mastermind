@@ -81,9 +81,24 @@ module GameText
     "Clues for this guess: "
   end
 
-  def turn_number
-    "Turn: #{Board.turn_number}"
+  def display_turn_number
+    "Turn: #{board.turn_number}"
   end
+
+  def user_code_breaker_win
+    "Victory! You broke the computer's code!"
+  end
+
+  def user_code_breaker_loss
+    "Game over. You couldn't break the computer's code."
+  end
+
+  def computer_code_breaker_win
+    "Game over. The computer broke your code."
+  end
+
+  # victory the computer failed to break your code
+
 end
 
 class Board
@@ -154,7 +169,7 @@ class UserCodeBreaker
   end
 
   def guess_valid?
-    @guess.length == 4 &&
+    guess.length == 4 &&
       guess_array.all? { |number| Board::NUMBER_OPTIONS.include?(number) }
   end
 end
@@ -281,9 +296,10 @@ class Game
     initialize_code
     puts computer_code_created
     initialize_code_breaker
-    
 
     game_loop
+
+    puts end_of_game_message
   end
 
   private
@@ -308,8 +324,8 @@ class Game
       display_guess
       print clue_text
       display_clues
+      puts display_turn_number
       board.increment_turn
-      # puts GameText::turn_number
       break if game_over?
     end
   end
@@ -338,6 +354,24 @@ class Game
 
   def code_breaker_wins?
     clues.all? { |clue| clue == Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position] }
+  end
+
+
+
+  def end_of_game_message
+    #if user_role = code breaker
+      if code_breaker_wins? 
+        user_code_breaker_win
+      elsif code_maker_wins? 
+        user_code_breaker_loss
+      end
+    #elsif user_role = code maker
+      #if code_breaker_wins?
+        #computer_code_breaker_win
+  end
+
+  def replay?
+
   end
 end
 
