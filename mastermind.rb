@@ -69,6 +69,10 @@ module GameText
     "Would you like to play as the Code Maker (1) or the Code Breaker (2)?"
   end
 
+  def invalid_role_number_warning 
+    "Enter 1 to play as the Code Maker, or 2 to play as the Code Breaker:".colorize(:red).bold
+  end
+
   def computer_code_created
     "The computer has chosen its 4-digit code."
   end
@@ -249,8 +253,7 @@ class Clue
       hash[index][:guess_value] = guess[index]
       hash[index][:code_value] = code[index]
       hash[index][:number_and_position_correct?] = number_and_position_true?(index)
-      
-      # hash[index][:number_correct?] = hash[index][:number_and_position_correct?] ? true : unknown_number_true?(index)
+
       hash
     end
   end
@@ -331,7 +334,26 @@ class Game
   end
 
   def choose_role
+    puts prompt_choose_role
+    get_user_role_number
+    binding.pry
+    assign_role(1)
+  end
 
+  def get_user_role_number
+    user_role_number = gets.chomp.to_i
+    unless user_role_number_valid?(user_role_number)
+      puts invalid_role_number_warning
+      get_user_role_number
+    end
+    user_role_number
+  end
+
+  def user_role_number_valid?(number)
+    number == 1 || number == 2
+  end
+
+  def assign_role(number)
   end
 
   def initialize_code
