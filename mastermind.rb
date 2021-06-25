@@ -65,6 +65,10 @@ end
 
 # Module for displaying game text
 module GameText
+  def prompt_choose_role
+    "Would you like to play as the Code Maker (1) or the Code Breaker (2)?"
+  end
+
   def computer_code_created
     "The computer has chosen its 4-digit code."
   end
@@ -93,6 +97,12 @@ module GameText
     "Game over. You couldn't break the computer's code."
   end
 
+  def reveal_code
+    puts "This is the code you were trying to crack: "
+    code.each { |number| print Board::NUMBER_OPTIONS_DISPLAY[number] + ' ' }
+    puts "\n\n"
+  end
+
   def computer_code_breaker_win
     "Game over. The computer broke your code."
   end
@@ -100,7 +110,7 @@ module GameText
   def prompt_replay
     "Play again? Press Y for Yes, or anything else for no."
   end
-  # victory the computer failed to break your code
+  
 
 end
 
@@ -295,24 +305,21 @@ class Game
     @board = Board.new
     instructions
     choose_role
-
-    initialize_code
-    puts computer_code_created
-    initialize_code_breaker
-
-    game_loop
-
-    puts end_of_game_message
-    puts prompt_replay
-
-    if replay?
-      replay_game
-    else
-      puts "Thanks for playing!"
-    end
+    play_game
+    end_of_game_handling
+    
   end
 
   private
+
+  def play_game
+    initialize_code
+    puts computer_code_created
+    initialize_code_breaker
+    game_loop
+  end
+
+  
 
   def choose_role
 
@@ -366,14 +373,24 @@ class Game
     clues.all? { |clue| clue == Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position] }
   end
 
+  def end_of_game_handling
+    end_of_game_message
+    puts prompt_replay
 
-
+    if replay?
+      replay_game
+    else
+      puts "Thanks for playing!"
+    end
+  end
+  
   def end_of_game_message
     #if user_role = code breaker
       if code_breaker_wins? 
-        user_code_breaker_win
+        puts user_code_breaker_win
       elsif code_maker_wins? 
-        user_code_breaker_loss
+        puts user_code_breaker_loss
+        reveal_code
       end
     #elsif user_role = code maker
       #if code_breaker_wins?
