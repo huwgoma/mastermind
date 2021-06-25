@@ -98,7 +98,7 @@ module GameText
   end
 
   def reveal_code
-    puts "This is the code you were trying to crack: "
+    puts "This is the code you were trying to crack: \n"
     code.each { |number| print Board::NUMBER_OPTIONS_DISPLAY[number] + ' ' }
     puts "\n\n"
   end
@@ -225,8 +225,9 @@ class Clue
   def process_guess
     count_common_numbers
     build_index_hash
+    subtract_true_true_values
+    evaluate_unknown_numbers
     add_clues
-    
   end
 
   def common_numbers
@@ -248,8 +249,8 @@ class Clue
       hash[index][:guess_value] = guess[index]
       hash[index][:code_value] = code[index]
       hash[index][:number_and_position_correct?] = number_and_position_true?(index)
-      subtract_true_true_value(hash, index)
-      hash[index][:number_correct?] = hash[index][:number_and_position_correct?] ? true : unknown_number_true?(index)
+      
+      # hash[index][:number_correct?] = hash[index][:number_and_position_correct?] ? true : unknown_number_true?(index)
       hash
     end
   end
@@ -258,8 +259,16 @@ class Clue
     guess[index] == code[index] 
   end
   
-  def subtract_true_true_value(hash, index)
-    subtract_from_common_count(guess[index]) if hash[index][:number_and_position_correct?] 
+  def subtract_true_true_values
+    index_hash.each do |index, hash|
+      subtract_from_common_count(guess[index]) if hash[:number_and_position_correct?] 
+    end
+  end
+
+  def evaluate_unknown_numbers
+    index_hash.each do |index, hash|
+      hash[:number_correct?] = hash[:number_and_position_correct?] ? true : unknown_number_true?(index)
+    end
   end
 
   def unknown_number_true?(index)
@@ -277,11 +286,13 @@ class Clue
 
   def add_clues
     index_hash.each do |index_key, hash|
+      
       if hash[:number_and_position_correct?]
-        hash[:clue] = 'correct number correct position'
+        hash[:clue] = 'correct number correct position' #?
         hash[:clue_display] = Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position]
       elsif hash[:number_correct?]
-        hash[:clue] = 'correct number wrong position'
+        #
+        hash[:clue] = 'correct number wrong position' #?
         hash[:clue_display] = Board::CLUE_OPTIONS_DISPLAY[:correct_number_wrong_position]
       end
     end
@@ -318,8 +329,6 @@ class Game
     initialize_code_breaker
     game_loop
   end
-
-  
 
   def choose_role
 
