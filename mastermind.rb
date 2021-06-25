@@ -73,6 +73,14 @@ module GameText
     "Enter 1 to play as the Code Maker, or 2 to play as the Code Breaker:".colorize(:red).bold
   end
 
+  def prompt_user_code
+    "Please enter your 4-digit code: "
+  end
+
+  def invalid_user_code_warning
+    "Your code must be 4-digit number using numbers between 1-6:".colorize(:red).bold
+  end
+
   def computer_code_created
     "The computer has chosen its 4-digit code."
   end
@@ -85,12 +93,26 @@ module GameText
     "Your guess should be a 4-digit number (each digit should be between 1-6):".colorize(:red).bold
   end
   
-  def clue_text
-    "Clues for this guess: "
+  def display_turn_number
+    "\nTurn: #{board.turn_number}\n\n"
   end
 
-  def display_turn_number
-    "Turn: #{board.turn_number}"
+  def display_guess
+    guess.each { |number| print Board::NUMBER_OPTIONS_DISPLAY[number] + ' ' }
+  end
+
+  def display_clues
+    clues.each do |clue| 
+      begin
+        print clue + ' ' 
+      rescue NoMethodError
+      end
+    end
+    puts "\n\n"
+  end
+  
+  def clue_text
+    "Clues for this guess: "
   end
 
   def user_code_breaker_win
@@ -150,7 +172,9 @@ end
 
 # If the computer is the Code Breaker
 class ComputerCodeBreaker
-  
+  def get_guess
+    
+  end
 end
 
 
@@ -180,8 +204,8 @@ class UserCodeBreaker
   attr_reader :guess, :guess_array
   
   def guess_to_int_array
-    @guess_array = guess.split('').map do |number|
-      number.to_i
+    @guess_array = guess.split('').map do |string_num|
+      string_num.to_i
     end
   end
 
@@ -191,20 +215,48 @@ class UserCodeBreaker
   end
 end
 
+# Class for the Code Maker (Computer or User)
 class CodeMaker
-  def initialize
-    create_computer_code
+  include GameText
+
+  def get_code(user_role)
+    @code = user_role == 'code maker' ? get_user_code : create_computer_code
   end
 
-  attr_reader :computer_code, :user_code
+  attr_reader :code 
+
+  private
+
+  attr_reader :user_input, :user_input_array
 
   def create_computer_code
     #@computer_code = Array.new(4) { Board::NUMBER_OPTIONS.sample }
-    @computer_code = [1, 3, 4, 1]
+    [1, 3, 4, 1]
   end
   
   def get_user_code
-    @user_code = gets.chomp
+    get_user_code_input
+    user_code_to_int_array
+    unless user_code_valid?
+      puts invalid_user_code_warning
+      get_user_code
+    end
+    return user_input_array
+  end
+
+  def get_user_code_input
+    @user_input = gets.chomp
+  end
+
+  def user_code_to_int_array
+    @user_input_array = user_input.split('').map do |string_num|
+      string_num.to_i
+    end
+  end
+
+  def user_code_valid?
+    user_input.length == 4 &&
+      user_input_array.all? { |number| Board::NUMBER_OPTIONS.include?(number) }
   end
 end
 
@@ -236,6 +288,7 @@ class Clue
 
   def common_numbers
     guess & code
+    
   end
 
   def count_common_numbers
@@ -309,35 +362,11 @@ class Clue
 
 end
 
-class Game
-  include Rules
-  include GameText
-
-  attr_reader :board, :code, :code_breaker, :guess, :clues
-
-  def initialize
-    @board = Board.new
-    instructions
-    choose_role
-    play_game
-    end_of_game_handling
-    
-  end
-
-  private
-
-  def play_game
-    initialize_code
-    puts computer_code_created
-    initialize_code_breaker
-    game_loop
-  end
-
+# Module containing functions to select the user's role
+module ChooseGameRole
   def choose_role
     puts prompt_choose_role
-    get_user_role_number
-    binding.pry
-    assign_role(1)
+    assign_role(get_user_role_number)
   end
 
   def get_user_role_number
@@ -354,43 +383,69 @@ class Game
   end
 
   def assign_role(number)
+    @user_role = number == 1 ? 'code maker' : 'code breaker'
+  end
+end
+
+class Game
+  include Rules
+  include GameText
+  include ChooseGameRole
+
+  attr_reader :board, :user_role, :code, :code_breaker, :guess, :clues 
+
+  def initialize
+    @board = Board.new
+    instructions
+    choose_role
+    
+    play_game
+
+    end_of_game_handling  
   end
 
-  def initialize_code
-    @code = CodeMaker.new.computer_code
+  private
+
+  def play_game
+    puts prompt_user_code if user_role == 'code maker'
+    initialize_code_maker
+    puts computer_code_created if user_role == 'code breaker'
+    initialize_code_breaker
+    game_loop
   end
+
+  ###
+  
+
+  def initialize_code_maker
+    @code = CodeMaker.new.get_code(user_role)
+  end
+
+  ######
 
   def initialize_code_breaker
-    @code_breaker = UserCodeBreaker.new
+    @code_breaker = user_role == 'code maker' ? ComputerCodeBreaker.new : UserCodeBreaker.new
   end
 
   def game_loop
     loop do
-      puts prompt_guess
+      
+      puts prompt_guess if user_role == 'code breaker'
       @guess = code_breaker.get_guess
+
       @clues = Clue.new(guess, code).return_clues
+
+      puts display_turn_number
       display_guess
       print clue_text
       display_clues
-      puts display_turn_number
+      
       board.increment_turn
       break if game_over?
     end
   end
   
-  def display_guess
-    guess.each { |number| print Board::NUMBER_OPTIONS_DISPLAY[number] + ' ' }
-  end
-
-  def display_clues
-    clues.each do |clue| 
-      begin
-        print clue + ' ' 
-      rescue NoMethodError
-      end
-    end
-    puts "\n"
-  end
+  
 
   def game_over?
     code_maker_wins? || code_breaker_wins?
