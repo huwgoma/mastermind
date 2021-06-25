@@ -97,6 +97,9 @@ module GameText
     "Game over. The computer broke your code."
   end
 
+  def prompt_replay
+    "Play again? Press Y for Yes, or anything else for no."
+  end
   # victory the computer failed to break your code
 
 end
@@ -300,6 +303,13 @@ class Game
     game_loop
 
     puts end_of_game_message
+    puts prompt_replay
+
+    if replay?
+      replay_game
+    else
+      puts "Thanks for playing!"
+    end
   end
 
   private
@@ -371,7 +381,12 @@ class Game
   end
 
   def replay?
+    replay_input = gets.chomp.downcase
+    replay_input == 'y' 
+  end
 
+  def replay_game
+    Game.new
   end
 end
 
