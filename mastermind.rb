@@ -172,8 +172,23 @@ end
 
 # If the computer is the Code Breaker
 class ComputerCodeBreaker
-  def get_guess
-    
+
+  attr_accessor :guess
+  
+  def initialize
+    @guess = [1, 1, 2, 2]
+  end
+  
+  def get_guess(turn)
+    if turn == 1 
+      return guess
+    else 
+      binding.pry
+    end
+  end
+
+  def get_clue_feedback
+
   end
 end
 
@@ -184,7 +199,7 @@ end
 class UserCodeBreaker
   include GameText
 
-  def get_guess
+  def get_guess(_turn)
     get_guess_input
     guess_to_int_array
     until guess_valid?
@@ -414,14 +429,11 @@ class Game
     game_loop
   end
 
-  ###
-  
 
   def initialize_code_maker
     @code = CodeMaker.new.get_code(user_role)
   end
 
-  ######
 
   def initialize_code_breaker
     @code_breaker = user_role == 'code maker' ? ComputerCodeBreaker.new : UserCodeBreaker.new
@@ -431,10 +443,9 @@ class Game
     loop do
       
       puts prompt_guess if user_role == 'code breaker'
-      @guess = code_breaker.get_guess
-
+      @guess = code_breaker.get_guess(board.turn_number)
       @clues = Clue.new(guess, code).return_clues
-
+      
       puts display_turn_number
       display_guess
       print clue_text
@@ -445,8 +456,6 @@ class Game
     end
   end
   
-  
-
   def game_over?
     code_maker_wins? || code_breaker_wins?
   end
