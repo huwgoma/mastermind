@@ -195,16 +195,16 @@ class ComputerCodeBreaker
     else 
       @previous_clue = previous_clue
       eliminate_impossible_codes
-      
+      binding.pry
     end
   end
 
   def eliminate_impossible_codes
-    set_array.select do |code|
+    @new_set = set_array.select do |code|
       # if the current iteration code is the real code
       # what clues would have been returned by the previous guess?
       potential_clue = Clue.new(guess, code).return_clues
-      binding.pry
+      potential_clue == previous_clue
     end
   end
 end
