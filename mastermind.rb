@@ -151,7 +151,7 @@ class Board
     self.turn_number += 1
   end
 
-  NUMBER_OPTIONS = [1,2,3,4,5,6]
+  NUMBER_OPTIONS = Array(1..6)
   NUMBER_OPTIONS_DISPLAY = {
     1 => "#{'  1  '.colorize(:light_white).on_red}",
     2 => "#{'  2  '.colorize(:light_white).on_yellow}",
@@ -174,21 +174,38 @@ end
 class ComputerCodeBreaker
 
   attr_accessor :guess
+
+  attr_reader :set_array, :previous_clue
   
   def initialize
     @guess = [1, 1, 2, 2]
+    @set_array = all_possible_codes(1, 6, 4)
+    
   end
   
-  def get_guess(turn)
+  def all_possible_codes(min, max, code_length)
+    array = Array(min..max)
+    array.repeated_permutation(code_length){ |permutation| array.push(permutation)}
+    array = array - Array(min..max)
+  end
+
+  def get_guess(turn, previous_clue)
     if turn == 1 
       return guess
     else 
-      binding.pry
+      @previous_clue = previous_clue
+      eliminate_impossible_codes
+      
     end
   end
 
-  def get_clue_feedback
-
+  def eliminate_impossible_codes
+    set_array.select do |code|
+      # if the current iteration code is the real code
+      # what clues would have been returned by the previous guess?
+      potential_clue = Clue.new(guess, code).return_clues
+      binding.pry
+    end
   end
 end
 
@@ -199,13 +216,13 @@ end
 class UserCodeBreaker
   include GameText
 
-  def get_guess(_turn)
+  def get_guess(_turn, _clues)
     get_guess_input
     guess_to_int_array
     until guess_valid?
       puts invalid_guess_warning
       puts prompt_guess
-      get_guess
+      get_guess(_turn, _clues)
     end
     return guess_array
   end
@@ -288,7 +305,8 @@ class Clue
   end
 
   def return_clues
-    return_clue_array
+    clue_array
+    remove_nil_values
   end
 
   private
@@ -303,7 +321,6 @@ class Clue
 
   def common_numbers
     guess & code
-    
   end
 
   def count_common_numbers
@@ -369,10 +386,14 @@ class Clue
     end
   end
 
-  def return_clue_array
+  def clue_array
     index_hash.map do |index_key, hash_value|
       hash_value[:clue_display]
     end
+  end
+
+  def remove_nil_values
+    clue_array.compact
   end
 
 end
@@ -441,9 +462,9 @@ class Game
 
   def game_loop
     loop do
-      
       puts prompt_guess if user_role == 'code breaker'
-      @guess = code_breaker.get_guess(board.turn_number)
+      
+      @guess = code_breaker.get_guess(board.turn_number, clues)
       @clues = Clue.new(guess, code).return_clues
       
       puts display_turn_number
@@ -465,7 +486,10 @@ class Game
   end
 
   def code_breaker_wins?
-    clues.all? { |clue| clue == Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position] }
+    clues.all? do |clue| 
+      clue == Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position]
+    end && clues.length == 4
+    
   end
 
   def end_of_game_handling
