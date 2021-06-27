@@ -173,40 +173,47 @@ end
 # If the computer is the Code Breaker
 class ComputerCodeBreaker
 
-  attr_accessor :guess
+  attr_accessor :guess, :possible_codes
 
-  attr_reader :set_array, :previous_clue
+  attr_reader :initial_set, :previous_clue
   
   def initialize
     @guess = [1, 1, 2, 2]
-    @set_array = all_possible_codes(1, 6, 4)
-    
+    @initial_set = all_possible_codes(1, 6, 4)
+    @possible_codes = initial_set
   end
   
+  def get_guess(turn, previous_clue)
+    if turn == 1 
+      return guess
+    else 
+      @previous_clue = previous_clue
+      
+      eliminate_impossible_codes(possible_codes)
+      binding.pry
+    end
+  end
+
+  private
+
   def all_possible_codes(min, max, code_length)
     array = Array(min..max)
     array.repeated_permutation(code_length){ |permutation| array.push(permutation)}
     array = array - Array(min..max)
   end
 
-  def get_guess(turn, previous_clue)
-    if turn == 1 
-      return guess
-    else 
-      @previous_clue = previous_clue
-      eliminate_impossible_codes
-      binding.pry
-    end
-  end
-
-  def eliminate_impossible_codes
-    @new_set = set_array.select do |code|
-      # if the current iteration code is the real code
-      # what clues would have been returned by the previous guess?
+  def eliminate_impossible_codes(array)
+    self.possible_codes = array.select do |code|
       potential_clue = Clue.new(guess, code).return_clues
       potential_clue == previous_clue
     end
   end
+
+  def find_next_guess
+
+  end
+
+
 end
 
 
