@@ -173,7 +173,7 @@ end
 # If the computer is the Code Breaker
 class ComputerCodeBreaker
 
-  attr_accessor :guess, :possible_codes
+  attr_accessor :guess, :possible_codes, :min_scores
 
   attr_reader :initial_set, :previous_clue
   
@@ -214,8 +214,9 @@ class ComputerCodeBreaker
 
   def find_next_guess
     guess_scores = score_potential_guesses
-    min_scores = collect_min_scores(guess_scores)
-    binding.pry
+    @min_scores = collect_min_scores(guess_scores)
+    choose_next_guess
+    
   end
 
   def score_potential_guesses
@@ -242,9 +243,19 @@ class ComputerCodeBreaker
     min_score = guess_scores.values.min
     guess_scores.select do |code_key, score_value|
       code_key if score_value == min_score
-    end
-    
+    end.keys
   end
+
+  def choose_next_guess
+    # Pick a member of S(Remaining Possible Codes) whenever possible
+    possible_and_min_codes = min_scores & possible_codes
+    if possible_and_min_codes.length > 0
+      return possible_and_min_codes[0]
+    else
+      return min_scores[0]
+    end
+  end
+
 
 end
 
