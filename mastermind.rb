@@ -190,7 +190,10 @@ class ComputerCodeBreaker
       @previous_clue = previous_clue
       
       eliminate_impossible_codes(possible_codes)
-      binding.pry
+      
+      find_next_guess
+      
+      
     end
   end
 
@@ -210,9 +213,38 @@ class ComputerCodeBreaker
   end
 
   def find_next_guess
-
+    guess_scores = score_potential_guesses
+    min_scores = collect_min_scores(guess_scores)
+    binding.pry
   end
 
+  def score_potential_guesses
+    initial_set.reduce(Hash.new(0)) do |guess_scores, guess|
+      score_count = possible_codes.reduce(Hash.new(0)) do |clue_count, code|
+        clue_result = calculate_clue_result(guess, code)
+        accumulate_clue_results(clue_count, clue_result)
+        clue_count
+      end
+      guess_scores[guess] = score_count.values.max
+      guess_scores
+    end
+  end
+
+  def calculate_clue_result(guess, code)
+    Clue.new(guess, code).return_clues
+  end
+
+  def accumulate_clue_results(accumulator, clue)
+    accumulator[clue] += 1
+  end
+
+  def collect_min_scores(guess_scores)
+    min_score = guess_scores.values.min
+    guess_scores.select do |code_key, score_value|
+      code_key if score_value == min_score
+    end
+    
+  end
 
 end
 
