@@ -191,8 +191,7 @@ class ComputerCodeBreaker
       
       eliminate_impossible_codes(possible_codes)
       
-      find_next_guess
-      
+      self.guess = find_next_guess
       
     end
   end
