@@ -441,16 +441,25 @@ end
 module ChooseGameRole
   def choose_role
     puts prompt_choose_role
-    assign_role(get_user_role_number)
+    
+    @user_role = user_role_number_to_role
   end
 
-  def get_user_role_number
-    user_role_number = gets.chomp.to_i
-    unless user_role_number_valid?(user_role_number)
+  def user_role_number_input
+    gets.chomp.to_i
+  end
+  
+  
+  
+  def user_role_number_to_role
+    user_role_number = user_role_number_input
+    
+    if user_role_number_valid?(user_role_number)
+      assign_role(user_role_number)
+    else
       puts invalid_role_number_warning
-      get_user_role_number
+      user_role_number_to_role
     end
-    user_role_number
   end
 
   def user_role_number_valid?(number)
@@ -458,7 +467,7 @@ module ChooseGameRole
   end
 
   def assign_role(number)
-    @user_role = number == 1 ? 'code maker' : 'code breaker'
+    number == 1 ? 'code maker' : 'code breaker'
   end
 end
 
