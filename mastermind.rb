@@ -512,7 +512,7 @@ class Game
   end
 
   def game_winner
-    code_breaker_wins? ? 'code breaker' : 'code maker' 
+    code_breaker_wins? ? 'code breaker' : 'code maker'
   end
 
   def end_of_game
@@ -527,22 +527,22 @@ class Game
   
   def end_of_game_message
     winner = game_winner
-    case winner  
-    when 'code breaker' 
+    case winner
+    when 'code breaker'
       puts user_code_breaker_win if user_role == 'code breaker'
       puts computer_code_breaker_win if user_role == 'code maker'
     when 'code maker'
       if user_role == 'code breaker'
-        puts user_code_breaker_loss 
+        puts user_code_breaker_loss
         reveal_code
       end
       puts computer_code_breaker_loss if user_role == 'code maker'
-    end    
+    end
   end
 
   def replay?
     replay_input = gets.chomp.downcase
-    replay_input == 'y' 
+    replay_input == 'y'
   end
 
   def replay_game
