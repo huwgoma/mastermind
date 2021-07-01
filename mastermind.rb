@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'colorize'
-
+require 'pry'
 # Module - Namespace for the game rules
 module Rules
   def instructions
@@ -45,7 +45,7 @@ module Rules
   def display_code_example(number_one, number_two, number_three, number_four)
     puts "\n"
     [number_one, number_two, number_three, number_four].each do |number|
-      print "#{Board::NUMBER_OPTIONS_DISPLAY[number]} " 
+      print "#{Board::NUMBER_OPTIONS_DISPLAY[number]} "
     end
   end
 
@@ -109,7 +109,7 @@ module GameText
   end
 
   def clues_display(clues)
-    clues.each { |clue| print "#{clue} " } 
+    clues.each { |clue| print "#{clue} " }
     puts "\n\n"
   end
   
@@ -177,7 +177,6 @@ end
 
 # Class - Code-Breaking behavior for the computer
 class ComputerCodeBreaker
-
   attr_accessor :guess, :remaining_possible_codes, :min_scores
 
   attr_reader :initial_set, :previous_clue
@@ -220,14 +219,12 @@ class ComputerCodeBreaker
   end
 
   def score_potential_guesses
-    initial_set.reduce(Hash.new(0)) do |guess_scores, guess|
-      score_count = remaining_possible_codes.reduce(Hash.new(0)) do |clue_count, code|
+    initial_set.each_with_object(Hash.new(0)) do |guess, guess_scores|
+      score_count = remaining_possible_codes.each_with_object(Hash.new(0)) do |code, clue_count|
         clue_result = calculate_clue_result(guess, code)
         accumulate_clue_results(clue_count, clue_result)
-        clue_count
       end
       guess_scores[guess] = score_count.values.max
-      guess_scores
     end
   end
 
@@ -249,11 +246,7 @@ class ComputerCodeBreaker
   def choose_next_guess
     # Pick a member of S(Remaining Possible Codes) whenever possible
     possible_and_min_codes = min_scores & remaining_possible_codes
-    if possible_and_min_codes.length > 0
-      return possible_and_min_codes[0]
-    else
-      return min_scores[0]
-    end
+    possible_and_min_codes.length.positive? ? possible_and_min_codes[0] : min_scores[0]
   end
 end
 
@@ -263,16 +256,16 @@ class UserCodeBreaker
 
   attr_reader :guess, :guess_array
 
-  def get_guess(_turn, _clues)
+  def get_guess(turn, clues)
     get_guess_input
     guess_to_int_array
 
     if guess_valid?
-      return guess_array
+      guess_array
     else
       puts invalid_guess_warning
       puts user_guess_prompt
-      get_guess(_turn, _clues)
+      get_guess(turn, clues)
     end
   end
 
@@ -283,9 +276,7 @@ class UserCodeBreaker
   end
 
   def guess_to_int_array
-    @guess_array = guess.split('').map do |string_num|
-      string_num.to_i
-    end
+    @guess_array = guess.split('').map(&:to_i)
   end
 
   def guess_valid?
@@ -298,9 +289,7 @@ end
 class CodeMaker
   include GameText
 
-  attr_reader :user_input, :user_input_array
-
-  attr_reader :code 
+  attr_reader :user_input, :user_input_array, :code
 
   def get_code(user_role)
     @code = user_role == 'code maker' ? get_user_code : create_computer_code
@@ -316,7 +305,7 @@ class CodeMaker
     get_user_code_input
     user_code_to_int_array
     if user_code_valid?
-      return user_input_array
+      user_input_array
     else
       puts invalid_user_code_warning
       get_user_code
@@ -328,7 +317,7 @@ class CodeMaker
   end
 
   def user_code_to_int_array
-    @user_input_array = user_input.split('').map { |string_num| string_num.to_i }
+    @user_input_array = user_input.split('').map(&:to_i)
   end
 
   def user_code_valid?
@@ -337,14 +326,14 @@ class CodeMaker
   end
 end
 
-#Class - Creates clue feedback objects when given a guess and a code
+# Class - Creates clue feedback objects when given a guess and a code
 class Clue
   attr_reader :guess, :code, :common_numbers_count
   attr_accessor :index_hash, :index_clue
 
   def initialize(guess, code)
     @guess = guess
-    @code = code    
+    @code = code
   end
 
   def return_clues
@@ -368,7 +357,7 @@ class Clue
   end
 
   def count_common_numbers
-    @common_numbers_count = common_numbers.reduce(Hash.new(0)) do |hash, number|
+    @common_numbers_count = common_numbers.each_with_object(Hash.new(0)) do |number, hash|
       guess_occurrences = guess.filter { |guess_digit| guess_digit == number }.length
       code_occurrences = code.filter { |code_digit| code_digit == number }.length
       hash[number] = [guess_occurrences, code_occurrences].min
@@ -377,22 +366,21 @@ class Clue
   end
 
   def build_index_hash
-    @index_hash = guess.each_with_index.reduce(Hash.new) do |hash, (number, index)|
-      hash[index] = Hash.new
-      hash[index][:guess_value] = guess[index]
+    @index_hash = guess.each_with_index.each_with_object({}) do |(number, index), hash|
+      hash[index] = {}
+      hash[index][:guess_value] = number
       hash[index][:code_value] = code[index]
       hash[index][:number_and_position_correct?] = number_and_position_true?(index)
-      hash
     end
   end
   
   def number_and_position_true?(index)
-    guess[index] == code[index] 
+    guess[index] == code[index]
   end
   
   def subtract_true_true_values
     index_hash.each do |index, hash|
-      subtract_from_common_count(guess[index]) if hash[:number_and_position_correct?] 
+      subtract_from_common_count(guess[index]) if hash[:number_and_position_correct?]
     end
   end
 
@@ -416,7 +404,7 @@ class Clue
   end
 
   def add_clues
-    index_hash.each do |index_key, hash|
+    index_hash.each do |_index_key, hash|
       if hash[:number_and_position_correct?]
         hash[:clue_display] = Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position]
       elsif hash[:number_correct?]
@@ -426,7 +414,7 @@ class Clue
   end
 
   def clue_array
-    index_hash.map { |index_key, hash_value| hash_value[:clue_display] }
+    index_hash.map { |_index_key, hash_value| hash_value[:clue_display] }
   end
 
   def remove_nil_values
@@ -434,7 +422,7 @@ class Clue
   end
 end
 
-# Module - Namespace for functions that handle user role selection 
+# Module - Namespace for functions that handle user role selection
 module ChooseGameRole
   def choose_role
     puts choose_role_prompt
@@ -456,7 +444,7 @@ module ChooseGameRole
   end
 
   def user_role_number_valid?(number)
-    number == 1 || number == 2
+    [1, 2].include?(number)
   end
 
   def assign_role(number)
@@ -470,7 +458,7 @@ class Game
   include GameText
   include ChooseGameRole
 
-  attr_reader :board, :user_role, :code, :code_breaker, :guess, :clues 
+  attr_reader :board, :user_role, :code, :code_breaker, :guess, :clues
 
   def initialize
     @board = Board.new
@@ -500,7 +488,7 @@ class Game
 
   def game_loop
     loop do
-      puts user_guess_prompt if user_role == 'code breaker'  
+      puts user_guess_prompt if user_role == 'code breaker'
       @guess = code_breaker.get_guess(board.turn_number, clues)
       @clues = Clue.new(guess, code).return_clues
       display_turn
@@ -514,13 +502,17 @@ class Game
   end
 
   def code_maker_wins?
-    board.turn_number>12
+    board.turn_number > 12
   end
 
   def code_breaker_wins?
-    clues.all? do |clue| 
+    clues.all? do |clue|
       clue == Board::CLUE_OPTIONS_DISPLAY[:correct_number_correct_position]
     end && clues.length == 4
+  end
+
+  def game_winner
+    code_breaker_wins? ? 'code breaker' : 'code maker' 
   end
 
   def end_of_game
@@ -529,25 +521,23 @@ class Game
     if replay?
       replay_game
     else
-      puts "Thanks for playing!"
+      puts 'Thanks for playing!'
     end
   end
   
   def end_of_game_message
-    if user_role == 'code breaker'
-      if code_breaker_wins?
-        puts user_code_breaker_win
-      elsif code_maker_wins?
+    winner = game_winner
+    case winner  
+    when 'code breaker' 
+      puts user_code_breaker_win if user_role == 'code breaker'
+      puts computer_code_breaker_win if user_role == 'code maker'
+    when 'code maker'
+      if user_role == 'code breaker'
         puts user_code_breaker_loss 
         reveal_code
       end
-    elsif user_role == 'code maker'
-      if code_breaker_wins?
-        puts computer_code_breaker_win
-      elsif code_maker_wins?
-        puts computer_code_breaker_loss
-      end
-    end
+      puts computer_code_breaker_loss if user_role == 'code maker'
+    end    
   end
 
   def replay?
